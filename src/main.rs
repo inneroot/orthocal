@@ -15,8 +15,16 @@ mod paschalion;
 mod pdqsort;
 mod pretty;
 
-/// Embedded version file (assets/.version).
-const VERSION: &str = include_str!("../assets/.version");
+/// Version with a git commit hash suffix, derived at build time by
+/// `build.rs` from `Cargo.toml` (single source of truth) and the current
+/// HEAD. Used by `--build` to identify exact builds; prints the crate
+/// version alone when built outside a git checkout.
+fn build_version() -> String {
+    match option_env!("GIT_HASH") {
+        Some(h) => format!("{}-{}", env!("CARGO_PKG_VERSION"), h),
+        None => env!("CARGO_PKG_VERSION").to_string(),
+    }
+}
 
 /// Man-page SYNOPSIS derived help text (see cmd/cli/man in the Go repo).
 const USAGE: &str =
@@ -27,6 +35,7 @@ struct ParsedFlags {
     json: bool,
     no_readings: bool,
     v: bool,
+    build: bool,
     h: bool,
     lang: String,
     reform: String,
@@ -60,7 +69,12 @@ fn run() -> i32 {
     }
 
     if parsed.v {
-        println!("{}", VERSION);
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        return 0;
+    }
+
+    if parsed.build {
+        println!("{}", build_version());
         return 0;
     }
 
@@ -119,6 +133,7 @@ fn parse_flags(args: &[String]) -> Result<ParsedFlags, String> {
         json: false,
         no_readings: false,
         v: false,
+        build: false,
         h: false,
         lang: "en".to_string(),
         reform: String::new(),
@@ -155,6 +170,9 @@ fn parse_flags(args: &[String]) -> Result<ParsedFlags, String> {
             }
             "v" => {
                 p.v = parse_bool(inline_value, &display)?;
+            }
+            "build" => {
+                p.build = parse_bool(inline_value, &display)?;
             }
             "h" => {
                 p.h = parse_bool(inline_value, &display)?;

@@ -33,7 +33,9 @@ Options:
   (proleptic Gregorian reform).
 - `--reform <day>,<month>,<year>` — interpret dates before the given Julian
   date as Julian and dates after it as Gregorian (e.g. `15,10,1582`).
-- `-v` — print the version.
+- `-v` — print the crate version (from `Cargo.toml`).
+- `--build` — print the full build version: crate version plus the git
+  commit hash the binary was built from (e.g. `1.1.0-b73ae160`).
 - `-h` — print usage (exit code 64, like the Go original).
 
 Examples:
