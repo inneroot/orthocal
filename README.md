@@ -82,7 +82,7 @@ data (CSV and Fluent assets) is embedded at compile time via `include_str!`.
 | `src/gjson.rs`    | `encoding/json` marshaling of `[]LiturgicalDay` |
 | `src/pretty.rs`   | `cmd/cli/calendarcmd` pretty printer (with `fatih/color` behavior) |
 | `src/mmath.rs`    | `pkg/mmath`                     |
-| `assets/`         | `src/assets` (CSV + .flt + version) |
+| `assets/`         | `src/assets` (CSV + .flt; version now comes from `Cargo.toml` + `build.rs`) |
 
 The Fluent files only use single-line `key = value` messages with `{$var}`
 placeholders, so `i18n.rs` parses them with a small key-value parser instead
@@ -118,11 +118,46 @@ of a full Fluent implementation.
 
 ## What was dropped
 
-- `cli2`/`cli3`/`cli4` helper CLIs and the website generator
-  (`cmd/generate`), web templates and static assets.
-- The generated man page; `-h` prints the same two-line synopsis the Go
-  binary prints.
-- `pkg/paths` (used only by the website generator).
+The original repository is more than the CLI: it also contains helper CLIs,
+published Go library packages, and an Italian Orthodox calendar website.
+Everything below is intentionally out of scope for this port.
+
+### Helper CLIs (`src/cmd/`)
+
+- `cli2` — one-off utility to compute Pascha for a year and shift it by a
+  number of days (`-year`, `-days`).
+- `cli3` — utility that reads a plain-text list of Scripture readings from
+  stdin, parses and merges verse pairs, and computes each reading's distance
+  from Pascha (used to maintain `readings.csv`).
+- `cli4` — debug script that checks for gaps between the paschal readings of
+  consecutive years (2000–2099) around Theophany.
+
+### Website (Italian calendar web app)
+
+- `cmd/generate` — static-site generator.
+- `src/templates/` (base/calendar/index/why-julian), `src/static/`,
+  `src/dynamic/` (CSS, favicons), `src/public/` (generated output).
+- Website-only internal packages: `directio`, `meta`, `nnet`, `enumflag`,
+  and `passets` (the asset pipeline: minification, fingerprinting,
+  Tailwind CSS). `i18ndom` is used by the CLI and was ported
+  (`src/i18ndom.rs`); `wrtr` (a ~30-line prefix writer) was folded into
+  `src/main.rs`.
+
+### Library packages (`src/pkg/`)
+
+- The Go `pkg/*` packages are published for use by other Go projects; this
+  Rust project is a binary crate, not a library. `cal`, `litcal`, `paschalion`
+  and `mmath` **were** ported (as internal modules) because the CLI needs
+  them.
+- `pkg/paths` — used only by the website generator.
+
+### Build & docs infrastructure
+
+- The generated man page (scdoc template); `-h` prints the same two-line
+  synopsis the Go binary prints.
+- `Taskfile.yml`, CI (`.build.yml`), git hooks, and the translation-patch
+  mailing-list workflow — the Rust project has its own `cargo` workflow.
+- `doc/glossary.md` and `doc/specs.md` (application documentation).
 
 ## Known differences from the Go reference
 
