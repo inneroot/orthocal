@@ -1,7 +1,8 @@
-# orthocal (Rust)
+# orthocal CLI (Rust)
 
 A Rust port of the [orthocal](https://git.sr.ht/~devgioele/orthocal) Orthodox
-liturgical calendar CLI (Go → Rust).
+liturgical calendar CLI (Go → Rust). 
+Added Russian output localization.
 
 `orthocal` prints the Orthodox liturgical calendar — commemoration feasts,
 fasting rules, and daily Scripture readings — for a given day, month, or
@@ -91,8 +92,12 @@ of a full Fluent implementation.
 
 - Full calendar logic: Pascha computation, movable/fixed feasts, forefeasts
   and afterfeasts, fasting rules, Scripture readings and citation strings.
-- All four date argument forms, both languages, `--json`, `--no-readings`,
-  `-v`, `-h`, and the optional Gregorian reform modes (`-g`, `--reform`).
+- All four date argument forms, all three languages (`en`, `it`, `ru`),
+  `--json`, `--no-readings`, `-v`, `-h`, `--build`, and the optional
+  Gregorian reform modes (`-g`, `--reform`).
+- **Change to the original: Russian translation.** The Go reference only
+  ships English and Italian; this port adds `--lang ru` (four `*_ru.flt`
+  files in `assets/`). Keys missing in Russian fall back to English.
 - Byte-compatible output: same formatting, same ANSI color codes and the
   same color-enabling conditions as the Go CLI (terminal stdout, no
   `NO_COLOR`, `TERM != dumb`), same JSON field names/order, same JSON string
@@ -142,12 +147,14 @@ of a full Fluent implementation.
    Go reference; this port returns `invalid date format` instead.
 5. `cal.ShiftMonth`/`ShiftYear` preserve the Go original's use of Julian
    month lengths (documented in code); they are not used by the CLI.
+6. **Addition, not a port:** the `ru` language (see "What was ported") and
+   the `--build` flag do not exist in the Go reference.
 
 ## Validation
 
 ```
 cd /home/inner/dev/orthocal/src && go build -o /tmp/orthocal-go ./cmd/cli   # reference
-cargo build --release && cargo test   # 37 tests, all pass
+cargo build --release && cargo test   # 38 tests, all pass
 ```
 
 Outputs were diffed for a battery of cases (single day, month, full year
