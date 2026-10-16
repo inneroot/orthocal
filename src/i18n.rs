@@ -16,16 +16,23 @@ pub const COMMEMORATIONS_IT: &str = include_str!("../assets/commemorations_it.fl
 pub const FASTING_RULES_IT: &str = include_str!("../assets/fasting_rules_it.flt");
 pub const READINGS_IT: &str = include_str!("../assets/readings_it.flt");
 
+pub const COMMON_RU: &str = include_str!("../assets/common_ru.flt");
+pub const COMMEMORATIONS_RU: &str = include_str!("../assets/commemorations_ru.flt");
+pub const FASTING_RULES_RU: &str = include_str!("../assets/fasting_rules_ru.flt");
+pub const READINGS_RU: &str = include_str!("../assets/readings_ru.flt");
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Lang {
     En,
     It,
+    Ru,
 }
 
 /// Maps a `--lang` code to a supported language, mirroring the deterministic
 /// behavior of the Go original's golang.org/x/text/language matcher:
-/// exactly "it" (any case) selects Italian; everything else (including
-/// "it-IT", unknown codes, and the empty string) falls back to English.
+/// exactly "it" (any case) selects Italian, exactly "ru" (any case) selects
+/// Russian; everything else (including "it-IT", unknown codes, and the empty
+/// string) falls back to English.
 ///
 /// NOTE: in the Go original, unknown codes (e.g. "de") fall back to a
 /// non-deterministic default (Go map ordering over the supported tags);
@@ -33,6 +40,7 @@ pub enum Lang {
 pub fn to_lang(s: &str) -> Lang {
     match s.to_ascii_lowercase().as_str() {
         "it" => Lang::It,
+        "ru" => Lang::Ru,
         _ => Lang::En,
     }
 }
@@ -42,6 +50,7 @@ pub struct T {
     lang: Lang,
     en: HashMap<String, String>,
     it: HashMap<String, String>,
+    ru: HashMap<String, String>,
 }
 
 impl T {
@@ -58,17 +67,23 @@ impl T {
                 it.entry(k).or_insert(v);
             }
         }
-        T { lang, en, it }
+        let mut ru = HashMap::new();
+        for src in [COMMON_RU, COMMEMORATIONS_RU, FASTING_RULES_RU, READINGS_RU] {
+            for (k, v) in parse_flt(src) {
+                ru.entry(k).or_insert(v);
+            }
+        }
+        T { lang, en, it, ru }
     }
 
     /// Translates a message key, substituting `{$var}` placeholders.
     /// If the key is not found, the key itself is returned (as in the Go
     /// original, which falls back to the key on format errors/missing keys).
     pub fn translate(&self, key: &str, vars: &[(&str, &str)]) -> String {
-        let template = if self.lang == Lang::It {
-            self.it.get(key).or_else(|| self.en.get(key))
-        } else {
-            self.en.get(key)
+        let template = match self.lang {
+            Lang::It => self.it.get(key).or_else(|| self.en.get(key)),
+            Lang::Ru => self.ru.get(key).or_else(|| self.en.get(key)),
+            Lang::En => self.en.get(key),
         };
         match template {
             Some(t) if t.contains('{') => render(t, vars),
@@ -130,6 +145,8 @@ mod tests {
         assert_eq!(Lang::En, to_lang("EN"));
         assert_eq!(Lang::It, to_lang("it"));
         assert_eq!(Lang::It, to_lang("IT"));
+        assert_eq!(Lang::Ru, to_lang("ru"));
+        assert_eq!(Lang::Ru, to_lang("RU"));
         // x/text/language quirk preserved: subtagged Italian codes do not match
         assert_eq!(Lang::En, to_lang("en-US"));
         assert_eq!(Lang::En, to_lang("it-IT"));
@@ -164,5 +181,19 @@ mod tests {
         assert_eq!("Lunedì", t.translate("weekday-monday", &[]));
         let en = T::new(Lang::En);
         assert_eq!("Monday", en.translate("weekday-monday", &[]));
+    }
+
+    #[test]
+    fn test_russian_overrides_english() {
+        let t = T::new(Lang::Ru);
+        assert_eq!("января", t.translate("month-january", &[]));
+        assert_eq!("Понедельник", t.translate("weekday-monday", &[]));
+        // keys missing in ru (e.g. commemoration-1502) fall back to English
+        let en = T::new(Lang::En);
+        assert_eq!(
+            en.translate("commemoration-1502", &[]),
+            t.translate("commemoration-1502", &[]),
+            "ru falls back to en for missing keys"
+        );
     }
 }

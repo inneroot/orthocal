@@ -24,8 +24,9 @@ Date argument forms (all Julian dates, year 33 AD to 9999 AD):
 
 Options:
 
-- `--lang <code>` — language: `en` (default) or `it`. Unsupported codes fall
-  back to English.
+- `--lang <code>` — language: `en` (default), `it`, or `ru`. Unsupported codes
+  fall back to English. (The Go original only ships `en` and `it`; `ru` is an
+  addition in this port — its `.flt` files live in `assets/`.)
 - `--json` — machine-readable output (Go `encoding/json` compatible).
 - `--no-readings` — omit Scripture readings.
 - `-g` / `--reform proleptic` — interpret input dates as Gregorian
